@@ -469,7 +469,6 @@ cmd.extend("loadDesignFromConfigFile", loadDesignFromConfigFile)
 
 def rewritePymolMenu(self):
     print "rewriting pymol menu!"
-    menu.PrePIVCompute = menu.compute
     menu.oldAction = menu.sele_action
     menu.oldAction2 = menu.sele_action2
     menu.old_all_action = menu.all_action
