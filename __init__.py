@@ -65,8 +65,6 @@ from pymol import cmd
 from pymol import util 
 from pymol import stored 
 from pymol import menu
-import PIL.Image
-import PIL.ImageTk
 import sys, urllib, zlib
 import Tix
 import ttk
@@ -205,7 +203,9 @@ def setmutable(selection, allowed_AAs=None):
         cmd.select("mutable", selection)
     cmd.deselect()
 
-    my_dict = { 'mutable' : []}
+    my_dict = { 'mutable' : [], 'newmutable': []}
+    cmd.iterate("(name ca and "+selection+")", "newmutable.append(chain+resi)", space=my_dict)
+    
     cmd.iterate("(name ca and "+selection+")", "mutable.append([chain+resi, resn])", space=my_dict)
     print my_dict
 
@@ -215,7 +215,8 @@ def setmutable(selection, allowed_AAs=None):
             titleText = "Set allowed mutations for residue "+my_dict['mutable'][0][0]
         d = testDialog(approot, titleText, my_dict['mutable'])
         for residue, allowed_AAs in allowed_muts.iteritems():
-            d.mutations.pre_check(allowed_AAs)
+            if residue in my_dict['newmutable']:
+                d.mutations.pre_check(allowed_AAs)
         print allowed_muts
     else:
         for residue_pair in my_dict['mutable']:
@@ -368,9 +369,9 @@ def generateConfigFile(runType, save_location):
     if "flexible" in names:
         cmd.iterate("(name ca and flexible)", "flexible.append([chain+resi, resn])", space=my_dict)
     if "cats" in names:
-        cmd.iterate("(name ca and cats)", "bb_cats.append([chain+resi, resn])", space=my_dict)
+        cmd.iterate("(name ca and cats)", "bb_cats.append(chain+resi)", space=my_dict)
     if "deeper" in names:
-        cmd.iterate("(name ca and deeper)", "bb_deeper.append([chain+resi, resn])", space=my_dict)
+        cmd.iterate("(name ca and deeper)", "bb_deeper.append(chain+resi)", space=my_dict)
     index = 1
     strandName = "strand"+str(index)
     while strandName in names:
@@ -409,12 +410,16 @@ def generateConfigFile(runType, save_location):
         print "# flexible"
         configFile.write("# flexible residues\n")
         for (resi, resn) in my_dict['flexible']:
-            print resi
+            print resi+" addWTRotamers continuousRotamers"
             configFile.write(resi+" addWTRotamers continuousRotamers\n")
         configFile.write("# strand definitions\n")
         for strandDef in my_dict['strands']:
             configFile.write(strandDef+" "+" ".join(my_dict['strands'][strandDef])+"\n")
             print(strandDef+" "+" ".join(my_dict['strands'][strandDef]))
+        configFile.write("cats "+" ".join(my_dict['bb_cats'])+"\n")
+        print("cats "+" ".join(my_dict['bb_cats'])+"\n")
+        configFile.write("deeper "+" ".join(my_dict['bb_deeper'])+"\n")
+        print("deeper "+" ".join(my_dict['bb_deeper'])+"\n")
 
 
 def loadDesignFromConfigFile(filename=None):
@@ -427,13 +432,21 @@ def loadDesignFromConfigFile(filename=None):
         for count, line in enumerate(configFile):
             if line.startswith('#'):
                 continue
+            if '#' in line:
+                line = line.split('#', 1)[0]
             m = re.match('pdb (\w+) "([^"]+)"', line) 
             if m is not None:
                 [pdbid, pdbfile] = m.groups()
                 pdbfiles[pdbid] = pdbfile
                 cmd.load(pdbfile)
-            if '#' in line:
-                line = line.split('#', 1)[0]
+            if line.startswith('cats'):
+                cats_res = line.split()[1:]
+                for residue in cats_res:
+                    setBBFlex('cats', 'chain '+residue[0]+' and resi '+residue[1:])
+            if line.startswith('deeper'):
+                deeper_res = line.split()[1:]
+                for residue in deeper_res:
+                    setBBFlex('deeper', 'chain '+residue[0]+' and resi '+residue[1:])
             m = re.match("(\w?\d+) ?((((\w\w\w)|(WT))\s)+)?(addWTRotamers)? ?(continuousRotamers)? ?(addWTRotamers)?", line) 
             if m is not None:
                 [residue_number, allowed_AAs, last_AA, last_WT_or_AA, last_non_WT, WT, \
@@ -523,7 +536,9 @@ def wrapload(filename, object='', state=0, format='', finish=1,
               mimic=1, object_props=None, atom_props=None, _self=cmd):
     print "loading file "+filename
     print "full path: "+os.path.abspath(filename)
-    pdbid = path_leaf(os.path.abspath(filename)).split('.')[0]
+    pdbid = object
+    if pdbid == '':
+        pdbid = path_leaf(os.path.abspath(filename)).split('.')[0]
     pdbfiles[pdbid] = os.path.abspath(filename)
     print pdbfiles
     oldload(filename, state=state, format=format, finish=finish,
@@ -549,11 +564,12 @@ class CheckboxTreeview(ttk.Treeview):
         # checkboxes are implemented with pictures
         print(os.getcwd())
         print(os.path.dirname(os.path.abspath(__file__)))
-        scriptdir = os.path.dirname(os.path.abspath(__file__))+"\\"
+        scriptdir = os.path.dirname(os.path.abspath(__file__))+"/"
 
-        self.im_checked = PIL.ImageTk.PhotoImage(PIL.Image.open(scriptdir+'checked.png'))
-        self.im_unchecked = PIL.ImageTk.PhotoImage(PIL.Image.open(scriptdir+'unchecked.png'))
-        self.im_tristate = PIL.ImageTk.PhotoImage(PIL.Image.open(scriptdir+'tristate.png'))
+        print "Looking for images in "+scriptdir
+        self.im_checked = PhotoImage(file=scriptdir+'checked.gif')
+        self.im_unchecked = PhotoImage(file=scriptdir+'unchecked.gif')
+        self.im_tristate = PhotoImage(file=scriptdir+'tristate.gif')
         self.tag_configure("unchecked", image=self.im_unchecked)
         self.tag_configure("tristate", image=self.im_tristate)
         self.tag_configure("checked", image=self.im_checked)
