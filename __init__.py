@@ -295,9 +295,12 @@ cmd.extend("setflexible", setflexible)
 class prompt_for:
 
 
-    def __init__(self, parent, titleText, choices, callback):
+    def __init__(self, parent, titleText, choicetexts, callback, choices=None):
         print "received parent: "+str(parent)
-        self.choices = choices
+        self.choicetexts = choicetexts
+        self.choices = choicetexts
+        if choices is not None:
+            self.choices = choices
         self.parent = Tk()
         self.parent.withdraw()
         self.chosen_value = None
@@ -311,12 +314,12 @@ class prompt_for:
 
         self.v = IntVar()
         self.v.set(0)
-        for val, choice in enumerate(choices):
+        for val, choicetext in enumerate(choicetexts):
             r = Radiobutton(top,
-                text=choice,
+                text=choicetext,
                 padx=20,
                 variable=self.v,
-                value=val)
+                value=choices[val])
             r.deselect()
             self.radiobuttons.append(r)
             r.pack()
@@ -331,7 +334,7 @@ class prompt_for:
         print "telling "+str(self.parent)+" to wait for "+str(self.top)
         self.parent.wait_window(self.top)
         print "durrhurrhurrhurr"
-        value = self.choices[self.v.get()]
+        value = self.v.get()
         return value
 
             
@@ -342,9 +345,8 @@ class prompt_for:
 
 def saveConfigFile(run_type=None, save_location=None):        
     print pdbfiles
-    print "called save wrapper."
     if(run_type is None):
-        prompt_for(approot, 'Please specify design type:', ['K* (recommended)', 'GMEC'], saveConfigFile)
+        prompt_for(approot, 'Please specify design type:', ['K* (recommended)', 'GMEC'], saveConfigFile, choices=['K*', 'GMEC'])
         return
     if(save_location is None):
         save_location = asksaveasfilename(initialdir="~/", title="Select Config File Save Location", \
