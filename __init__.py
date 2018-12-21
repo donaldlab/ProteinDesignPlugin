@@ -283,6 +283,7 @@ class testDialog(Toplevel):
 def setflexible(selection):
     print "setting flexiblity for "+selection
     cmd.show("lines", selection)
+    selection = selection + " and not mutable"
     scselection = selection + " and not name c+o+n+a+ca"
     util.cbac(scselection+" and not mutable")
     if 'flexible' in cmd.get_names('public_selections'):
@@ -476,7 +477,6 @@ def rewritePymolMenu(self):
     menu.oldAction2 = menu.sele_action2
     menu.old_all_action = menu.all_action
     menu.old_mol_action = menu.mol_action
-    menu.old_obj_action = menu.obj_action
     def newAction(self_cmd, sele):
         output = menu.oldAction(self_cmd, sele)
         output.append([ 1, 'design', gavilan_cmd(self_cmd, sele)])
