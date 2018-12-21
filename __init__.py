@@ -162,18 +162,18 @@ def gavilan_cmd(self_cmd, sele):
 
 def setBBFlex(flexType, selection):
     print "Adding "+flexType+" flexibility to "+selection
-    selection = selection + " and name c+o+n+a+ca"
-    cmd.show("sticks", selection)
+    setflexible(selection)
+    bbselection = selection + " and name c+o+n+a+ca and not (mutable and name ca)"
+    cmd.show("sticks", bbselection)
     if flexType == 'cats' :
-        cmd.color("deeppurple", selection)
+        cmd.color("deeppurple", bbselection)
     if flexType == 'deeper' :
-        cmd.color("hotpink", selection)
+        cmd.color("hotpink", bbselection)
     if flexType in cmd.get_names('public_selections'):
         cmd.select(flexType, selection+" or "+flexType)
     else:
         cmd.select(flexType, selection)
     cmd.group('bb_flex', 'cats deeper')
-    setflexible(selection)
     cmd.deselect()
 
 cmd.extend("setBBFlex", setBBFlex)
@@ -196,8 +196,8 @@ cmd.extend("setStrand", setStrand)
 def setmutable(selection, allowed_AAs=None):
     print "setting mutations for "+selection
     cmd.show("sticks", selection)
-    scselection = selection + " and not name c+o+n+a+ca"
-    util.cbao(selection)
+    scselection = selection + " and not name c+o+n+a"
+    util.cbao(scselection)
     if 'mutable' in cmd.get_names('public_selections'):
         cmd.select("mutable", selection+" or mutable")
     else:
@@ -282,14 +282,15 @@ class testDialog(Toplevel):
 
 def setflexible(selection):
     print "setting flexiblity for "+selection
-    cmd.show("lines", selection)
+    cmd.show("sticks", selection)
     selection = selection + " and not mutable"
-    scselection = selection + " and not name c+o+n+a+ca"
+    scselection = selection + " and not name c+o+n+a"
     util.cbac(scselection+" and not mutable")
     if 'flexible' in cmd.get_names('public_selections'):
         cmd.select("flexible", selection+" or flexible")
     else:
         cmd.select("flexible", selection)
+    cmd.set_bond('stick_radius', 0.1, 'flexible and not name c+o+n+a')
     cmd.deselect()
 
 cmd.extend("setflexible", setflexible)
