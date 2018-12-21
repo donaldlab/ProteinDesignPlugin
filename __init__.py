@@ -145,7 +145,7 @@ def __init__(self):
 def gavilan_cmd(self_cmd, sele):
     rsele = repr(sele)
     return [[ 2, 'Design:'       ,''                        ],
-                  [ 1, 'set mutable', 'cmd.keyword[\'setmutable\'][0]('+rsele+')'],
+                  [ 1, 'set/check allowed mutations', 'cmd.keyword[\'setmutable\'][0]('+rsele+')'],
                   [ 1, 'set flexible', 'cmd.keyword[\'setflexible\'][0]('+rsele+')'],
                   [ 1, 'define strand', 'cmd.keyword[\'setStrand\'][0]('+rsele+')'],
                   [ 1, 'set backbone flexibility...', [
@@ -173,6 +173,7 @@ def setBBFlex(flexType, selection):
     else:
         cmd.select(flexType, selection)
     cmd.group('bb_flex', 'cats deeper')
+    setflexible(selection)
     cmd.deselect()
 
 cmd.extend("setBBFlex", setBBFlex)
@@ -283,7 +284,7 @@ def setflexible(selection):
     print "setting flexiblity for "+selection
     cmd.show("lines", selection)
     scselection = selection + " and not name c+o+n+a+ca"
-    util.cbac(scselection)
+    util.cbac(scselection+" and not mutable")
     if 'flexible' in cmd.get_names('public_selections'):
         cmd.select("flexible", selection+" or flexible")
     else:
@@ -474,6 +475,7 @@ def rewritePymolMenu(self):
     menu.oldAction2 = menu.sele_action2
     menu.old_all_action = menu.all_action
     menu.old_mol_action = menu.mol_action
+    menu.old_obj_action = menu.obj_action
     def newAction(self_cmd, sele):
         output = menu.oldAction(self_cmd, sele)
         output.append([ 1, 'design', gavilan_cmd(self_cmd, sele)])
