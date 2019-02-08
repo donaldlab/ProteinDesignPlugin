@@ -12,12 +12,36 @@ import string
 import Queue
 import threading
 
+FULL_AA_TO_3_MAP = {
+    'Alanine': 'ALA',
+    'Glycine': 'GLY',
+    'Isoleucine': 'ILE',
+    'Leucine': 'LEU',
+    'Proline': 'PRO',
+    'Valine': 'VAL',
+    'Phenylalanine': 'PHE',
+    'Tryptophan': 'TRP',
+    'Tyrosine': 'TYR',
+    'Aspartate': 'ASP',
+    'Glutamate': 'GLU',
+    'Arginine': 'ARG',
+    'Histidine': 'HIS',
+    'Lysine': 'LYS',
+    'Serine': 'SER',
+    'Threonine': 'THR',
+    'Cysteine': 'CYS',
+    'Methionine': 'MET',
+    'Asparagine': 'ASN',
+    'Glutamine': 'GLN'
+}
+
 class checkboxtreeview(ttk.Treeview):
     """
         Treeview widget with checkboxes left of each item.
         The checkboxes are done via the image attribute of the item, so to keep
         the checkbox, you cannot add an image to the item.
     """
+
 
     def __init__(self, master=None, **kw):
         ttk.Treeview.__init__(self, master, **kw)
