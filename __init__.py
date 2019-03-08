@@ -320,14 +320,11 @@ cmd.extend("setflexible", setflexible)
 class prompt_for:
 
 
-    def __init__(self, parent, titleText, choicetexts, callback, argname, args, choices=None):
+    def __init__(self, parent, titleText, callback, argname, args, choices):
         print "received parent: "+str(parent)
-        self.choicetexts = choicetexts
-        self.choices = choicetexts
+        self.choices = choices
         self.args = args
         self.argname = argname
-        if choices is not None:
-            self.choices = choices
         self.parent = Tk()
         self.parent.withdraw()
         self.chosen_value = None
@@ -377,11 +374,11 @@ def saveConfigFile(arglist=None, run_type=None, save_location=None):
     if(arglist is None):
         arglist= {}
     if("run_type" not in arglist or arglist['run_type'] is None):
-        prompt_for(approot, 'Please specify design type:', ['K* (recommended)', 'GMEC'], saveConfigFile, \
+        prompt_for(approot, 'Please specify design type:', saveConfigFile, \
                     "run_type", arglist, choices={'K* (recommended)':'K*', 'GMEC':'GMEC'})
         return
     if("output_format" not in arglist or arglist['output_format'] is None):
-        prompt_for(approot, 'Please specify output format:', ['OSPREY (YAML)', 'Sylph'], saveConfigFile, \
+        prompt_for(approot, 'Please specify output format:', saveConfigFile, \
                     "output_format", arglist, choices={'OSPREY (YAML)':'OSPREY', 'Sylph':'Sylph'})
         return
     if(save_location is None):
