@@ -34,7 +34,7 @@ about = """/////////////////////////////////////////////////////////////////////
    USA
 
     Contact Info:
-        Bruce Donald
+        :Bruce Donald
         Duke University
         Department of Computer Science
         Levine Science Research Center (LSRC)
@@ -158,6 +158,7 @@ def gavilan_cmd(self_cmd, sele):
                         [ 1, 'CATS', 'cmd.keyword[\'setBBFlex\'][0](\'cats\','+rsele+')'],
                         [ 1, 'DEEPer', 'cmd.keyword[\'setBBFlex\'][0](\'deeper\','+rsele+')'],
                   ]],
+                  [ 1, 'add rotation/translation', 'cmd.keyword[\'setRotTrans\'][0]('+rsele+')'],
                   [ 1, 'export search parameters', [
                         [ 2, 'Design type', ''],
                         [ 1, 'K* (affinity)', 'cmd.keyword[\'saveConfigFile\'][0](\'markstar\')'],
@@ -168,7 +169,10 @@ def gavilan_cmd(self_cmd, sele):
 def setBBFlex(flexType, selection):
     print "Adding "+flexType+" flexibility to "+selection
     setflexible(selection)
-    bbselection = selection + " and name c+o+n+a+ca and not (mutable and name ca)"
+    mutstr = ""
+    if 'mutable' in cmd.get_names('public_selections'):
+        mutstr = "mutable and "
+    bbselection = selection + " and name c+o+n+a+ca and not ("+mutstr+"name ca)"
     cmd.show("sticks", bbselection)
     if flexType == 'cats' :
         cmd.color("deeppurple", bbselection)
@@ -182,6 +186,17 @@ def setBBFlex(flexType, selection):
     cmd.deselect()
 
 cmd.extend("setBBFlex", setBBFlex)
+
+def setRotTrans(selection):
+    print "Adding rotation and translation to "+selection
+    cmd.show("spheres", selection)
+    if 'rot_trans' in cmd.get_names('public_selections'):
+        cmd.select("rot_trans", selection+" or rot_trans")
+    else:
+        cmd.select("rot_trans", selection)
+    cmd.deselect()
+
+cmd.extend("setRotTrans", setRotTrans)
 
 def setStrand(selection):
     print "defining strand "+selection
@@ -287,9 +302,12 @@ class testDialog(Toplevel):
 def setflexible(selection):
     print "setting flexiblity for "+selection
     cmd.show("sticks", selection)
-    selection = selection + " and not mutable"
+    mutaffix = ""
+    if 'mutable' in cmd.get_names('public_selections'):
+        mutaffix = " and not mutable"
+    selection = selection + mutaffix
     scselection = selection + " and not name c+o+n+a"
-    util.cbac(scselection+" and not mutable")
+    util.cbac(scselection + mutaffix)
     if 'flexible' in cmd.get_names('public_selections'):
         cmd.select("flexible", selection+" or flexible")
     else:
@@ -302,10 +320,12 @@ cmd.extend("setflexible", setflexible)
 class prompt_for:
 
 
-    def __init__(self, parent, titleText, choicetexts, callback, choices=None):
+    def __init__(self, parent, titleText, choicetexts, callback, argname, args, choices=None):
         print "received parent: "+str(parent)
         self.choicetexts = choicetexts
         self.choices = choicetexts
+        self.args = args
+        self.argname = argname
         if choices is not None:
             self.choices = choices
         self.parent = Tk()
@@ -314,19 +334,19 @@ class prompt_for:
         self.callback = callback
         self.radiobuttons  = []
         top = self.top = Toplevel(self.parent)
-        print "durr"
         top.title(titleText)
         Label(top, text=titleText, justify=LEFT,
         padx=20).pack()
 
-        self.v = IntVar()
-        self.v.set(0)
-        for val, choicetext in enumerate(choicetexts):
+        v = StringVar(self.parent)
+        self.v = v
+        self.v.set("Nope")
+        for choicetext, output in choices.iteritems():
             r = Radiobutton(top,
                 text=choicetext,
                 padx=20,
-                variable=self.v,
-                value=choices[val])
+                variable=v,
+                value=output)
             r.deselect()
             self.radiobuttons.append(r)
             r.pack()
@@ -334,7 +354,6 @@ class prompt_for:
 
         Button(top, text="Ok", command=self.ok) \
             .pack()
-        print "durrhurr"
 
     def show(self):
         self.top.deiconify()
@@ -346,26 +365,40 @@ class prompt_for:
 
             
     def ok(self):
+
+        print "Index chosen: "+str(self.v.get())
+        self.args[self.argname] = self.v.get()
         self.top.destroy()
-        self.callback(run_type=self.choices[self.v.get()])
+        self.callback(arglist=self.args)
 
 
-def saveConfigFile(run_type=None, save_location=None):        
+def saveConfigFile(arglist=None, run_type=None, save_location=None):        
     print pdbfiles
-    if(run_type is None):
-        prompt_for(approot, 'Please specify design type:', ['K* (recommended)', 'GMEC'], saveConfigFile, choices=['K*', 'GMEC'])
+    if(arglist is None):
+        arglist= {}
+    if("run_type" not in arglist or arglist['run_type'] is None):
+        prompt_for(approot, 'Please specify design type:', ['K* (recommended)', 'GMEC'], saveConfigFile, \
+                    "run_type", arglist, choices={'K* (recommended)':'K*', 'GMEC':'GMEC'})
+        return
+    if("output_format" not in arglist or arglist['output_format'] is None):
+        prompt_for(approot, 'Please specify output format:', ['OSPREY (YAML)', 'Sylph'], saveConfigFile, \
+                    "output_format", arglist, choices={'OSPREY (YAML)':'OSPREY', 'Sylph':'Sylph'})
         return
     if(save_location is None):
         save_location = asksaveasfilename(initialdir="~/", title="Select Config File Save Location", \
                     filetypes=(("cfg", "*.cfg"),("All files", "*.*")))
     if(save_location == u''):
         return
-    generateConfigFileYAML(run_type, save_location)    
+    print "output format is "+arglist['output_format']
+    if(arglist['output_format'] == "OSPREY"):
+        generateConfigFileYAML(arglist['run_type'], save_location)    
+    if(arglist['output_format'] == "Sylph"):
+        generateConfigFile(arglist['run_type'], save_location)    
 
 cmd.extend("saveConfigFile", saveConfigFile)
 
 def generateConfigFileYAML(runType, save_location):
-    my_dict = { 'mutable' : [], 'flexible': [], 'strands':{}, 'bb_cats':[], 'bb_deeper':[]}
+    my_dict = { 'mutable' : [], 'flexible': [], 'strands':{}, 'bb_cats':[], 'bb_deeper':[], 'rot_trans':[]}
     print "Generating design configuration file for "+runType+" run"
     
     # check for relevant parameters
@@ -381,6 +414,8 @@ def generateConfigFileYAML(runType, save_location):
         cmd.iterate("(name ca and cats)", "bb_cats.append(chain+resi)", space=my_dict)
     if "deeper" in names:
         cmd.iterate("(name ca and deeper)", "bb_deeper.append(chain+resi)", space=my_dict)
+    if "rot_trans" in names:
+        cmd.iterate("rot_trans", "rot_trans.append(chain+resi)", space=my_dict)
     index = 1
     strandName = "strand"+str(index)
     while strandName in names:
@@ -407,52 +442,64 @@ def generateConfigFileYAML(runType, save_location):
     with open(filename, 'w+') as configFile:
         print "runtype "+runType
         configFile.write("# config file auto-generated by OSPREY Design Plugin for PyMol\n")
+        configFile.write("# this config file is formatted to meet YAML specifications\n")
         configFile.write("runtype: "+runType+"\n")
         configFile.write("structures:\n")
         for pdb, pdbfile in pdbfiles.iteritems():
-            configFile.write("\t"+pdb+": \""+pdbfile+"\"\n")
-            print("\t"+pdb+": \""+pdbfile+"\"\n")
+            configFile.write("    \'"+pdb+"\': \'"+pdbfile+"\'\n")
+            print("    \'"+pdb+"\': \""+pdbfile+"\"\n")
+
+        configFile.write("# strand definitions\n")
+        configFile.write("strands:\n")
+        for strandDef in sorted(my_dict['strands']):
+            configFile.write("    "+strandDef+": ["+", ".join(my_dict['strands'][strandDef])+"]\n")
+            print("    "+strandDef+": ["+", ".join(my_dict['strands'][strandDef])+"]\n")
+
         print "# mutable residues"
         configFile.write("# specify mutable and flexible residues\n")
         configFile.write("designed residues:\n")
         configFile.write("# mutable residues\n")
         for (resi, resn) in my_dict['mutable']:
-            print "\t"+resi+": ["+", ".join(allowed_muts[resi])+" addWTRotamers, continuousRotamers]"
-            configFile.write("\t"+resi+": "+", ".join(allowed_muts[resi])+" addWTRotamers, continuousRotamers]\n")
+            print "    "+resi+": ["+", ".join(allowed_muts[resi])+", addWTRotamers, continuousRotamers]"
+            configFile.write("    "+resi+": ["+", ".join(allowed_muts[resi])+", addWTRotamers, continuousRotamers]\n")
+
         print "# flexible"
         configFile.write("# flexible residues\n")
         for (resi, resn) in my_dict['flexible']:
-            print "\t"+resi+": [WT, addWTRotamers, continuousRotamers]"
-            configFile.write("\t"+resi+": [WT, addWTRotamers, continuousRotamers]\n")
-        configFile.write("# strand definitions\n")
-        configFile.write("strands:\n")
-        for strandDef in my_dict['strands']:
-            configFile.write("\t"+strandDef+": ["+", ".join(my_dict['strands'][strandDef])+"]\n")
-            print("\t"+strandDef+": ["+", ".join(my_dict['strands'][strandDef])+"]\n")
+            print "    "+resi+": [WT, addWTRotamers, continuousRotamers]"
+            configFile.write("    "+resi+": [WT, addWTRotamers, continuousRotamers]\n")
+
+        print "# rotations and translations"
+        configFile.write("# rotations and translations\n")
+        print "rotation translation: ["+", ".join(list(dict.fromkeys(my_dict['rot_trans'])))+"]"
+        configFile.write("rotation translation: ["+", ".join(list(dict.fromkeys(my_dict['rot_trans'])))+"]\n")
+
         configFile.write("# backbone flexiblity\n")
         configFile.write("bbflexibility:\n")
         if(len(my_dict['bb_cats']) > 0):
-            configFile.write("\tcats: ["+", ".join(my_dict['bb_cats'])+"]\n")
-            print("\tcats: ["+", ".join(my_dict['bb_cats'])+"]\n")
+            configFile.write("    cats: ["+", ".join(my_dict['bb_cats'])+"]\n")
+            print("    cats: ["+", ".join(my_dict['bb_cats'])+"]\n")
         if(len(my_dict['bb_deeper']) > 0):
-            configFile.write("\tdeeper: ["+", ".join(my_dict['bb_deeper'])+"]\n")
-            print("\tdeeper: ["+", ".join(my_dict['bb_deeper'])+"]\n")
+            configFile.write("    deeper: ["+", ".join(my_dict['bb_deeper'])+"]\n")
+            print("    deeper: ["+", ".join(my_dict['bb_deeper'])+"]\n")
 
 def generateConfigFile(runType, save_location):
-    my_dict = { 'mutable' : [], 'flexible': [], 'strands':{}, 'bb_cats':[], 'bb_deeper':[]}
+    my_dict = { 'mutable' : [], 'flexible': [], 'strands':{}, 'bb_cats':[], 'bb_deeper':[], 'rot_trans':[]}
     print "Generating design configuration file for "+runType+" run"
     
     # check for relevant parameters
     names = cmd.get_names('public_selections')
     if "mutable" not in names and "flexible" not in names:
         print "ERROR: at least one residue must be flexible or mutable"
-        return
+        #return
     if "mutable" in names:
         cmd.iterate("(name ca and mutable)", "mutable.append([chain+resi, resn])", space=my_dict)
     if "flexible" in names:
         cmd.iterate("(name ca and flexible)", "flexible.append([chain+resi, resn])", space=my_dict)
     if "cats" in names:
         cmd.iterate("(name ca and cats)", "bb_cats.append(chain+resi)", space=my_dict)
+    if "rot_trans" in names:
+        cmd.iterate("rot_trans", "rot_trans.append(chain+resi)", space=my_dict)
     if "deeper" in names:
         cmd.iterate("(name ca and deeper)", "bb_deeper.append(chain+resi)", space=my_dict)
     index = 1
@@ -460,6 +507,9 @@ def generateConfigFile(runType, save_location):
     while strandName in names:
         my_dict['strands'][strandName] = []
         cmd.iterate("(name ca and "+strandName+")", strandName+".append(chain+resi)", space=my_dict['strands'])
+        if "rot_trans" in names:
+            cmd.iterate("(rot_trans and "+strandName+")", strandName+".append(chain+resi)", space=my_dict['strands'])
+        my_dict['strands'][strandName] = list(dict.fromkeys(my_dict['strands'][strandName]))
         index = index+1
         strandName = "strand"+str(index)
 
@@ -481,28 +531,40 @@ def generateConfigFile(runType, save_location):
     with open(filename, 'w+') as configFile:
         print "runtype "+runType
         configFile.write("# config file auto-generated by OSPREY Design Plugin for PyMol\n")
+        configFile.write("# this config file is compatible with Sylph\n")
         configFile.write("runtype "+runType+"\n")
         for pdb, pdbfile in pdbfiles.iteritems():
             configFile.write("pdb "+pdb+" \""+pdbfile+"\"\n")
             print("pdb "+pdb+" \""+pdbfile+"\"\n")
+
+        configFile.write("# strand definitions\n")
+        for strandDef in sorted(my_dict['strands']):
+            configFile.write(strandDef+" "+" ".join(my_dict['strands'][strandDef])+"\n")
+            print(strandDef+" "+" ".join(my_dict['strands'][strandDef]))
+
         print "# mutable"
         configFile.write("# mutable residues\n")
         for (resi, resn) in my_dict['mutable']:
             print resi+" "+" ".join(allowed_muts[resi])+" addWTRotamers continuousRotamers"
             configFile.write(resi+" "+" ".join(allowed_muts[resi])+" addWTRotamers, continuousRotamers\n")
+
         print "# flexible"
         configFile.write("# flexible residues\n")
         for (resi, resn) in my_dict['flexible']:
             print resi+" addWTRotamers continuousRotamers"
             configFile.write(resi+" addWTRotamers continuousRotamers\n")
-        configFile.write("# strand definitions\n")
-        for strandDef in my_dict['strands']:
-            configFile.write(strandDef+" "+" ".join(my_dict['strands'][strandDef])+"\n")
-            print(strandDef+" "+" ".join(my_dict['strands'][strandDef]))
-        configFile.write("cats "+" ".join(my_dict['bb_cats'])+"\n")
-        print("cats "+" ".join(my_dict['bb_cats'])+"\n")
-        configFile.write("deeper "+" ".join(my_dict['bb_deeper'])+"\n")
-        print("deeper "+" ".join(my_dict['bb_deeper'])+"\n")
+
+        print "# rotations and translations"
+        configFile.write("# rotations and translations\n")
+        print "rotationTranslation "+" ".join(list(dict.fromkeys(my_dict['rot_trans'])))
+        configFile.write("rotationTranslation "+" ".join(list(dict.fromkeys(my_dict['rot_trans'])))+"\n")
+
+        if len(my_dict['bb_cats']) > 0 :
+            configFile.write("cats "+" ".join(my_dict['bb_cats'])+"\n")
+            print("cats "+" ".join(my_dict['bb_cats'])+"\n")
+        if len(my_dict['bb_deeper']) > 0 :
+            configFile.write("deeper "+" ".join(my_dict['bb_deeper'])+"\n")
+            print("deeper "+" ".join(my_dict['bb_deeper'])+"\n")
 
 
 def loadDesignFromConfigFile(filename=None):
@@ -514,6 +576,10 @@ def loadDesignFromConfigFile(filename=None):
     with open(filename, 'r+') as configFile:
         for count, line in enumerate(configFile):
             if line.startswith('#'):
+                if 'YAML' in line:
+                    print "YAML FILE FOUND."
+                    loadDesignFromConfigFileYAML(filename)
+                    return
                 continue
             if '#' in line:
                 line = line.split('#', 1)[0]
@@ -544,6 +610,124 @@ def loadDesignFromConfigFile(filename=None):
                 for index, residue_number in enumerate(strand_residues):
                     strand_residues[index] = "(chain "+residue_number[0]+" and resi "+residue_number[1:]+")"
                 setStrand("+".join(strand_residues))
+            m = re.match("(\w?\d+) rotationTranslation", line) 
+            if line.startswith('rotationTranslation'):
+                strand_residues = line.strip().split(" ")[1:]
+                for index, residue_number in enumerate(strand_residues):
+                    residue_number = "(chain "+residue_number[0]+" and resi "+residue_number[1:]+")"
+                    setRotTrans(residue_number)
+
+def loadStructures(line):
+    print "loading structure from ["+line+"]"
+    m = re.match('\s+\'(\w+)\': \'([^\']+)\'', line) 
+    if m is not None:
+        [pdbid, pdbfile] = m.groups()
+        pdbfiles[pdbid] = pdbfile
+        cmd.load(pdbfile)
+
+def loadDesignResidues(line):
+    print "loading residue ["+line+"]"
+    m = re.match("\s+(\w?\d+): ?\[((((\w\w\w)|(WT)),\s)+)?(addWTRotamers,?)? ?(continuousRotamers,?)? ?(addWTRotamers)?\]", line) 
+    if m is not None:
+        [residue_number, allowed_AAs, last_AA, last_WT_or_AA, last_non_WT, WT, \
+            add_wild_type_rotamers_string, continuous_rotamers_string, \
+            add_wild_type_rotamers_backup_string] = m.groups()         
+        allowed_AAs = allowed_AAs.replace(',','')
+        print "Allowed AAs: ["+allowed_AAs+"]"
+        if allowed_AAs is None or ( len(allowed_AAs) < 4 and 'WT' in allowed_AAs ):
+            setflexible('chain '+residue_number[0]+' and resi '+residue_number[1:])
+        else:
+            setmutable('chain '+residue_number[0]+' and resi '+residue_number[1:], allowed_AAs=allowed_AAs.strip())
+
+def loadDEEPERFlex(line):
+    deeper_res = line.split()
+    for residue in deeper_res:
+        setBBFlex('deeper', 'chain '+residue[0]+' and resi '+residue[1:])
+
+def loadBBFlex(line):
+    print "loading bbflex from ["+line+"]"
+    m = re.match("\s+((cats:)|(deeper:)) ?\[((\w?\d+,? ?)+)\]", line) 
+    if m is not None:
+        [flextype, cats, deeper, residues, first_res] = m.groups()
+        print "flextype "+flextype
+        print "residues "+residues
+        if flextype == 'cats:':
+            loadCATSFlex(residues)
+        if flextype == 'deeper:':
+            loadDEEPERFlex(residues)
+
+    
+
+def loadCATSFlex(line):
+    print "loading cats flex from ["+line+"]"
+    cats_res = line.split()
+    for residue in cats_res:
+        setBBFlex('cats', 'chain '+residue[0]+' and resi '+residue[1:])
+
+def loadRotationTranslation(line):
+    print "loading rottrans from ["+line+"]"
+    residues = line.split(':')[1]
+    residues = residues.replace('[', '')
+    residues = residues.replace(']', '')
+    residues = residues.replace(',', '')
+    residues = residues.replace('\n', '')
+    print "rottrans residues: "+residues
+    strand_residues = residues.strip().split(" ")
+    for index, residue_number in enumerate(strand_residues):
+        if len(residue_number) < 1:
+            continue
+        residue_number = "(chain "+residue_number[0]+" and resi "+residue_number[1:]+")"
+        setRotTrans(residue_number)
+
+def loadStrands(line):
+    print "loading strands from ["+line+"]"
+    strand_residues = line.strip().split(" ")[1:]
+    for index, residue_number in enumerate(strand_residues):
+        strand_residues[index] = "(chain "+residue_number[0]+" and resi "+residue_number[1:]+")"
+    setStrand("+".join(strand_residues))
+
+def runType(line):
+    return
+
+def loadDesignFromConfigFileYAML(filename=None):
+    state_funcs = {
+        'structures:':loadStructures,
+        'designed residues:':loadDesignResidues,
+        'bbflexibility:':loadBBFlex,
+        'cats:':loadCATSFlex,
+        'deeper':loadDEEPERFlex,
+        'strands:':loadStrands,
+        'runtype:':runType,
+    }
+    if filename == "" or filename is None:
+        filename = askopenfilename(initialdir="~/", title="Select Config File to Load", \
+            filetypes=(("cfg", "*.cfg"),("All files", "*.*")))
+    if filename == "" or filename is None:
+        return
+    state = "normal"
+    indentation = ""
+    with open(filename, 'r+') as configFile:
+        for count, line in enumerate(configFile):
+            print "handling line [" +line+"]"
+            if line.startswith('#'):
+                continue
+            if '#' in line:
+                line = line.split('#', 1)[0]
+
+            m = re.match('(^\S[^:]+:)', line) 
+            if m is not None:
+                if 'runtype:' in line:
+                    continue
+                if 'rotation translation:' in line:
+                    loadRotationTranslation(line)
+                    continue
+                state = m.groups()[0]
+                print "setting state to "+state
+                continue
+
+            print "Calling state "+state
+            state_funcs[state](line)
+
 
 
 cmd.extend("loadDesignFromConfigFile", loadDesignFromConfigFile)
@@ -606,7 +790,7 @@ def devshortcut(approot=None):
 cmd.extend("devshortcut",devshortcut)
 
 def devshortcut2(approot=None):
-    loadDesignFromConfigFile("D:\\Research\\pymol\\pymoltool\\test.cfg")
+    loadDesignFromConfigFile("C:\\Users\\thepa\\Documents\\Research\\PDP\\test.cfg")
     
 
 cmd.extend("devshortcut2",devshortcut2)
