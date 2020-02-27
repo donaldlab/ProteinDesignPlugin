@@ -897,12 +897,12 @@ def probe_dots(self_cmd, sele):
         import pymol.plugins
         pymol.plugins.initialize(-1)
     rsele = repr(sele)
-    sele_morphs = lambda x: [[ 1, a, 'cmd.async(cmd.keyword[\'loadDotsFromSels\'][0],%s,%s,%s)' % (rsele, repr(a),
+    sele_morphs = lambda x: [[ 1, a, 'cmd.keyword[\'loadDotsFromSels\'][0](%s,%s,%s)' % (rsele, repr(a),
             "\'"+rsele[1:-1]+repr(a)[1:-1]+"dots\'") ] for a in x if a != sele]
     sele_ranges= lambda x: [[ 1, "within "+str(a)+" Angstroms", 
-            'cmd.async(cmd.keyword[\'loadDotsForResidueShell\'][0],%s,%s)' % (rsele, repr(a)) ] for a in x if a != sele]
+            'cmd.keyword[\'loadDotsForResidueShell\'][0](%s,%s)' % (rsele, repr(a)) ] for a in x if a != sele]
     return [[ 2, 'Dots:'       ,''                        ],
-                  [ 1, 'with itself', 'cmd.async(cmd.keyword[\'loadDotsForSelf\'][0], '+rsele+')' ],
+                  [ 1, 'with itself', 'cmd.keyword[\'loadDotsForSelf\'][0]('+rsele+')' ],
                   [ 1, 'with neighbors', sele_ranges(range(2,7,2)) ],
                   [ 1, 'with selection', sele_morphs(self_cmd.get_names('public_selections')[:25]) ],
               ]
