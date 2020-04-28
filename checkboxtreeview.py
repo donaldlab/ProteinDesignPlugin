@@ -1,15 +1,15 @@
-import tkSimpleDialog
-import tkMessageBox
+import tkinter.simpledialog
+import tkinter.messagebox
 import ntpath
-import sys, urllib, zlib
-import Tix
-import ttk
-from Tkinter import *
+import sys, urllib.request, urllib.parse, urllib.error, zlib
+import tkinter.tix
+import tkinter.ttk
+from tkinter import *
 import Pmw
 import subprocess
 import os,math,re
 import string
-import Queue
+import queue
 import threading
 
 FULL_AA_TO_3_MAP = {
@@ -35,7 +35,7 @@ FULL_AA_TO_3_MAP = {
     'Glutamine': 'GLN'
 }
 
-class checkboxtreeview(ttk.Treeview):
+class checkboxtreeview(tkinter.ttk.Treeview):
     """
         Treeview widget with checkboxes left of each item.
         The checkboxes are done via the image attribute of the item, so to keep
@@ -44,13 +44,13 @@ class checkboxtreeview(ttk.Treeview):
 
 
     def __init__(self, master=None, **kw):
-        ttk.Treeview.__init__(self, master, **kw)
+        tkinter.ttk.Treeview.__init__(self, master, **kw)
         # checkboxes are implemented with pictures
-        print(os.getcwd())
-        print(os.path.dirname(os.path.abspath(__file__)))
+        print((os.getcwd()))
+        print((os.path.dirname(os.path.abspath(__file__))))
         scriptdir = os.path.dirname(os.path.abspath(__file__))+"/"
 
-        print "Looking for images in "+scriptdir
+        print("Looking for images in "+scriptdir)
         self.im_checked = PhotoImage(file=scriptdir+'checked.gif')
         self.im_unchecked = PhotoImage(file=scriptdir+'unchecked.gif')
         self.im_tristate = PhotoImage(file=scriptdir+'tristate.gif')
@@ -60,7 +60,7 @@ class checkboxtreeview(ttk.Treeview):
         # check / uncheck boxes on click
         self.bind("<Button-1>", self.box_click, True)
         self.selectmode = None
-        style = ttk.Style(master)
+        style = tkinter.ttk.Style(master)
 
         style.layout('nodotbox.Treeview.Item', 
                      [('Treeitem.padding',
@@ -80,7 +80,7 @@ class checkboxtreeview(ttk.Treeview):
         elif not ("unchecked" in kw["tags"] or "checked" in kw["tags"]
                   or "tristate" in kw["tags"]):
             kw["tags"] = ("unchecked",)
-        ttk.Treeview.insert(self, parent, index, iid, **kw)
+        tkinter.ttk.Treeview.insert(self, parent, index, iid, **kw)
 
     def check_descendant(self, item):
         """ check the boxes of item's descendants """

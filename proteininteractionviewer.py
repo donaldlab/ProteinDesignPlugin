@@ -60,23 +60,23 @@ about = """/////////////////////////////////////////////////////////////////////
     Bruce Donald, Professor of Computer Science
 """
 
-import tkSimpleDialog
-import tkMessageBox
+import tkinter.simpledialog
+import tkinter.messagebox
 from pymol import cmd
 from pymol import util 
 from pymol import stored 
 from pymol import menu
-import sys, urllib, zlib
-import Tkinter
-from Tkinter import *
-from tkFileDialog import askopenfilename
-from tkFileDialog import asksaveasfilename
+import sys, urllib.request, urllib.parse, urllib.error, zlib
+import tkinter
+from tkinter import *
+from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import asksaveasfilename
 import Pmw
 import subprocess
 import os,math,re
 import string
 from pymol.cgo import *
-import Queue
+import queue
 import threading
 import platform
 
@@ -104,7 +104,7 @@ class ProteinInteractionViewer:
     curAAtype = None
     hasFocus = False
 
-    dotQueue = Queue.Queue();
+    dotQueue = queue.Queue();
 
 
     def __init__(self,app):
@@ -162,7 +162,7 @@ class ProteinInteractionViewer:
         self.h_buttons.add('Add H', command = self.addH)
         
         self.replVar = IntVar()
-        self.replaceCheck = Tkinter.Checkbutton(self.h_buttons.interior(), text = 'Replace',variable=self.replVar)
+        self.replaceCheck = tkinter.Checkbutton(self.h_buttons.interior(), text = 'Replace',variable=self.replVar)
         self.replaceCheck.grid(row = 0, column = 4)
 
         for widget in (self.h_sel, self.h_newSel, self.h_buttons):
@@ -208,7 +208,7 @@ class ProteinInteractionViewer:
         optionFrame = Frame(group.interior())
 
         self.d_selfVar = IntVar()
-        self.d_selfCheck = Tkinter.Checkbutton(optionFrame, text="Self", variable=self.d_selfVar)
+        self.d_selfCheck = tkinter.Checkbutton(optionFrame, text="Self", variable=self.d_selfVar)
 
         
         self.dotSizeEntry = Pmw.EntryField(optionFrame, labelpos='w',label_text="Dot Size: ", value=0,validate='real')
@@ -234,7 +234,7 @@ class ProteinInteractionViewer:
         frame.pack(fill='x')
         
         
-        self.resLabel = Tkinter.Label(frame, text="")
+        self.resLabel = tkinter.Label(frame, text="")
         self.resLabel.grid(row=0,column=2)
         
         self.dihVar = []
@@ -256,7 +256,7 @@ class ProteinInteractionViewer:
         self.rotBox.grid(rowspan=4,row=1,column=1)
         
         self.showDotsCheckVar = IntVar()
-        self.showDotsCheck = Tkinter.Checkbutton(frame, text="Show Dots", variable=self.showDotsCheckVar,command=self.dotCheckCB)
+        self.showDotsCheck = tkinter.Checkbutton(frame, text="Show Dots", variable=self.showDotsCheckVar,command=self.dotCheckCB)
         self.showDotsCheck.grid(row=5,column=1)
         
         self.notebook.setnaturalsize()
@@ -361,7 +361,7 @@ class ProteinInteractionViewer:
             if(dihNum < len(aa.dihAtomNames)):
                 AAtype.setDihVal("_kropkresi", aa.dihAtomNames[dihNum],dihNum, newVal);
         else:
-            print "Please select one protein residue"
+            print("Please select one protein residue")
 
     def clearH(self):
         if reduceExe:
@@ -371,9 +371,9 @@ class ProteinInteractionViewer:
             if seleStr:
                 cmd.do('remove (hydro and ('+seleStr+'))')
             else:
-                print 'Could not find selection'
+                print('Could not find selection')
         else:
-            print reduceError
+            print(reduceError)
 
     def addH(self):
         if reduceExe: 
@@ -382,9 +382,9 @@ class ProteinInteractionViewer:
                 if sele != '':
                     pdbStr = cmd.get_pdbstr(sele)
                     args = '"'+reduceExe+'"' + ' -BUILD -DB '+ '"'+reduceDB+'" -'
-                    print args+" "
+                    print(args+" ")
                     p = subprocess.Popen(args,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-                    newpdb = p.communicate(pdbStr)[0]
+                    newpdb = p.communicate(pdbStr.encode())[0]
                     mynewsel = sele + '_H'
                     if self.h_newSel.getvalue() != '':
                         mynewsel = self.h_newSel.getvalue()
@@ -393,9 +393,9 @@ class ProteinInteractionViewer:
                         cmd.delete(sele)
                     cmd.read_pdbstr(newpdb, mynewsel)
                 else:
-                    print "Could not determine selection"
+                    print("Could not determine selection")
         else:
-            print reduceError
+            print(reduceError)
 
     def getSels(self):
         sels = cmd.get_names("public_selections");
@@ -411,7 +411,7 @@ class ProteinInteractionViewer:
                          self.d_params.getvalue(),float(self.dotSizeEntry.getvalue())/100.,
                          float(self.lineSizeEntry.getvalue()),self.d_selfVar.get())
         else:
-            print probeError
+            print(probeError)
 
     def execute(self,result):
         if result == 'OK':
@@ -419,7 +419,7 @@ class ProteinInteractionViewer:
         elif result == 'Close':
             self.quit()
         elif result == 'About':
-            print about
+            print(about)
         else:
             self.quit()
                 
@@ -433,7 +433,7 @@ class ProteinInteractionViewer:
 
     def detectLostFocus(self,event):
         if (event.widget.widgetName == "toplevel"):
-            print "Lost Focus", event.widget.widgetName
+            print("Lost Focus", event.widget.widgetName)
 
     def updateSels(self,event):
         
@@ -508,13 +508,13 @@ class ProteinInteractionViewer:
     def remote(self,pdbCode):
         pdbCode = pdbCode.upper()
         try:
-            pdbFile = urllib.urlopen('http://www.rcsb.org/pdb/cgi/export.cgi/' +
+            pdbFile = urllib.request.urlopen('http://www.rcsb.org/pdb/cgi/export.cgi/' +
                                        pdbCode + '.pdb.gz?format=PDB&pdbId=' +
                                        pdbCode + '&compression=gz')
             cmd.read_pdbstr(zlib.decompress(pdbFile.read()[22:], -zlib.MAX_WBITS), pdbCode)
         except:
-            print "Unexpected error:", sys.exc_info()[0]
-            tkMessageBox.showerror('Invalid Code',
+            print("Unexpected error:", sys.exc_info()[0])
+            tkinter.messagebox.showerror('Invalid Code',
                                    'You entered an invalid pdb code:' + pdbCode)
 def get_binary_suffix_windows(name):
     if not name.endswith('.exe'):
@@ -556,7 +556,7 @@ def verify(name):
             if os.path.exists(f):
                 return f
         
-    print "Could not find default location for file: %s" % name
+    print("Could not find default location for file: %s" % name)
     return ""
 
 def findExecutables():
@@ -567,9 +567,9 @@ def findExecutables():
     reduceExe = verify("reduce.exe")
 
     if probeExe:
-        print "Found: "+probeExe
+        print("Found: "+probeExe)
     if reduceExe:
-        print "Found: "+reduceExe
+        print("Found: "+reduceExe)
         if "REDUCE_HET_DICT" in os.environ:
             reduceDB = os.environ["REDUCE_HET_DICT"]
         else:
@@ -653,10 +653,10 @@ def loadDotsFromSels(sel1, sel2, dotsName='dots', extraParams="", dotSize=0,line
         args = '"'+probeExe+'" '+extraParams+' -MinOccupancy0.0 -MC -self "all" -'
 
     
-    print args
+    print(args)
     
     p = subprocess.Popen(args,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-    dots = p.communicate(pdbStr)[0]
+    dots = p.communicate(pdbStr.encode())[0]
     #p = subprocess.Popen('probe -both "1" "3" -',shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE)
     #stdout_val = p.communicate("ATOM      1  N   GLY     1       7.920  25.950  15.720  1.00  0.00")[0]
 
@@ -697,7 +697,7 @@ def drawDots (dotList, vectorList, dotSize = 0, lineSize = 1 ):
     return obj
 
 def loadDotsFromFile(file,dotsName='dots'):
-        print file
+        print(file)
         
         #slurp up the data file
         input = open(file,'r')
@@ -711,7 +711,7 @@ def loadDots(data,dotsName='dots', dotSize=0, lineSize=1):
     dots = []
     dotList = []
     vectorList = []
-    data = data.split('\n')
+    data = data.decode().split('\n')
 
     dotDict = {"small_overlap":[], "bad_overlap":[],"vdw_contact":[],"H-bonds":[]}
     vectorDict = {"small_overlap":[], "bad_overlap":[],"vdw_contact":[],"H-bonds":[]}
@@ -810,6 +810,46 @@ class ThreadDots(threading.Thread):
                 
                 
             self.queue.task_done()
+
+def computePPI(selection1, selection2, radius=6):
+    cmd.select(selection1+'_PPI', selection1+' and byres '+selection2+' around '+str(radius))
+    cmd.select(selection2+'_PPI', selection2+' and byres '+selection1+' around '+str(radius))
+cmd.extend("computePPI", computePPI)
+
+def autoEnsembleDots():
+    for model in cmd.get_object_list():
+        pattern = model[:model.index(".")]
+        number = model[model.index(".")+1:]
+        sequenceDict = dict((x.strip(), y.strip()) \
+                       for x, y in (element.split('-') \
+                       for element in pattern.split('_')))
+        chain = ""
+        resiList = []
+        for resi in list(sequenceDict.keys()):
+            chain = resi[0]
+            resnum = resi[1:]
+            resiList.append(resnum)
+        selection = "chain "+chain+" and resi "+"+".join(resiList)
+            
+    loadEnsembleDots(pattern+".*", selection, 1, len(cmd.get_object_list())+1, len(number))
+    util.cbac('chain B')
+    util.cbag('chain A')
+cmd.extend('autoEnsemble', autoEnsembleDots)
+
+def loadEnsembleDots(pattern, selection, start, end, padding, radius=5):
+    for i in [str(id0).rjust(int(padding), '0') for id0 in range(int(start), int(end))]: 
+        object_selection = pattern.replace("*",i)
+        print("processing selection "+object_selection)
+        loadDotsFromSels(object_selection+" and "+selection, object_selection+" and byres "+selection+" around "+str(radius), str(i)+"dots")
+    cmd.show("sticks", selection)
+    cmd.show("lines", "byres "+selection+" around 5")
+    cmd.orient("byres "+selection+" around 5")
+cmd.extend("loadEnsembleDots", loadEnsembleDots)
+
+def loadDotsAroundModel(model, selection, radius=4):
+    loadDotsFromSels("%s and byres %s" % (model, selection), "%s and byres (%s and byres %s) around %d" % (model, model, selection, radius), model+"dots")
+cmd.extend("loadDotsAroundModel", loadDotsAroundModel)
+    
             
 def loadDotsForSelf(selection, colorResidues=False):
     selectionName = selection.replace(" ","_")
@@ -817,8 +857,8 @@ def loadDotsForSelf(selection, colorResidues=False):
         defaultCounter = len(cmd.get_names('public_selections'))
         selectionName =  "default"+str(defaultCounter)
     identifier = selectionName
-    print "selection: "+selection
-    print "Selection name: "+selectionName
+    print("selection: "+selection)
+    print("Selection name: "+selectionName)
     cmd.select(selectionName, selection)
     loadDotsFromSels(selection, selection, identifier+"dots", doSelf=1)
     if colorResidues:
@@ -869,16 +909,16 @@ def loadDotsForResidueShell(selection, radius, colorResidues=False):
         atoms with zero occupancy will be included in the calculation. 
 
     """
-    print "Hello World!"
+    print("Hello World!")
     selectionName = selection.replace(" ","_")
     if selectionName == 'sele':
         defaultCounter = len(cmd.get_names('public_selections'))
         selectionName =  "default"+str(defaultCounter)
     identifier = selectionName
     shellName = selectionName+"shell" 
-    print "selection: "+selection
-    print "Selection name: "+selectionName
-    print "Shell name: "+shellName
+    print("selection: "+selection)
+    print("Selection name: "+selectionName)
+    print("Shell name: "+shellName)
     cmd.select(selectionName, selection)
     cmd.select(shellName, "byres "+selection+" around "+str(radius))
     loadDotsFromSels(selection, shellName, identifier+"dots")
@@ -893,7 +933,7 @@ def loadDotsForResidueShell(selection, radius, colorResidues=False):
 
 def probe_dots(self_cmd, sele):
     if 'loadDotsForResidueShell' not in  self_cmd.keyword:
-        print "Trying to initialize plugins."
+        print("Trying to initialize plugins.")
         import pymol.plugins
         pymol.plugins.initialize(-1)
     rsele = repr(sele)
@@ -903,7 +943,7 @@ def probe_dots(self_cmd, sele):
             'cmd.keyword[\'loadDotsForResidueShell\'][0](%s,%s)' % (rsele, repr(a)) ] for a in x if a != sele]
     return [[ 2, 'Dots:'       ,''                        ],
                   [ 1, 'with itself', 'cmd.keyword[\'loadDotsForSelf\'][0]('+rsele+')' ],
-                  [ 1, 'with neighbors', sele_ranges(range(2,7,2)) ],
+                  [ 1, 'with neighbors', sele_ranges(list(range(2,7,2))) ],
                   [ 1, 'with selection', sele_morphs(self_cmd.get_names('public_selections')[:25]) ],
               ]
 
@@ -926,7 +966,7 @@ def gavilan_cmd(self_cmd, sele):
            ]
 
 def setBBFlex(flexType, selection):
-    print "Adding "+flexType+" flexibility to "+selection
+    print("Adding "+flexType+" flexibility to "+selection)
     cmd.show("sticks", selection)
     if flexType in cmd.get_names('public_selections'):
         cmd.select(flexType, selection+" or "+flexType)
@@ -938,7 +978,7 @@ def setBBFlex(flexType, selection):
 cmd.extend("setBBFlex", setBBFlex)
 
 def setStrand(selection):
-    print "defining strand "+selection
+    print("defining strand "+selection)
     cmd.show("ribbon", selection)
     strandsSoFar = cmd.get_names('public_selections')
     index = 1
@@ -953,7 +993,7 @@ cmd.extend("setStrand", setStrand)
 
 
 def setmutable(selection):
-    print "setting mutations for "+selection
+    print("setting mutations for "+selection)
     cmd.show("sticks", selection)
     util.cbao(selection)
     if 'mutable' in cmd.get_names('public_selections'):
@@ -965,7 +1005,7 @@ def setmutable(selection):
 cmd.extend("setmutable", setmutable)
 
 def setflexible(selection):
-    print "setting flexiblity for "+selection
+    print("setting flexiblity for "+selection)
     cmd.show("lines", selection)
     util.cbac(selection)
     if 'flexible' in cmd.get_names('public_selections'):
@@ -978,12 +1018,12 @@ cmd.extend("setflexible", setflexible)
 
 def generateConfigFile(runType):
     my_dict = { 'mutable' : [], 'flexible': [], 'strands':{}, 'bb_cats':[], 'bb_deeper':[]}
-    print "Generating design configuration file for "+runType+" run"
+    print("Generating design configuration file for "+runType+" run")
     
     # check for relevant parameters
     names = cmd.get_names('public_selections')
     if "mutable" not in names and "flexible" not in names:
-        print "ERROR: at least one residue must be flexible or mutable"
+        print("ERROR: at least one residue must be flexible or mutable")
         return
     if "mutable" in names:
         cmd.iterate("(name ca and mutable)", "mutable.append([chain+resi, resn])", space=my_dict)
@@ -1001,39 +1041,39 @@ def generateConfigFile(runType):
         index = index+1
         strandName = "strand"+str(index)
 
-    print "Mutable:"
-    print my_dict['mutable']
-    print "Flexible:"
-    print my_dict['flexible']
-    print "Backbone flexibility:"
-    print "CATS:"
-    print my_dict['bb_cats']
-    print "DEEPer:"
-    print my_dict['bb_deeper']
-    print "Defined strands:"
-    print my_dict['strands']
+    print("Mutable:")
+    print(my_dict['mutable'])
+    print("Flexible:")
+    print(my_dict['flexible'])
+    print("Backbone flexibility:")
+    print("CATS:")
+    print(my_dict['bb_cats'])
+    print("DEEPer:")
+    print(my_dict['bb_deeper'])
+    print("Defined strands:")
+    print(my_dict['strands'])
 
     filename = asksaveasfilename(initiadir="/", title="Select Config File Save Location", \
         filetypes=(("cfg", "*.cfg"),("All files", "*.*")))
-    print "Saving config file to ["+filename+"]"
+    print("Saving config file to ["+filename+"]")
 
     with open(filename, 'w+') as configFile:
-        print "runtype "+runType
+        print("runtype "+runType)
         configFile.write("# config file auto-generated by OSPREY Design Plugin for PyMol\n")
         configFile.write("runtype "+runType+"\n")
-        print "# mutable"
+        print("# mutable")
         configFile.write("# mutable residues\n")
         for (resi, resn) in my_dict['mutable']:
-            print resi
+            print(resi)
             configFile.write(resi+"\n")
-        print "# flexible"
+        print("# flexible")
         configFile.write("# flexible residues\n")
         for (resi, resn) in my_dict['flexible']:
-            print resi
+            print(resi)
             configFile.write(resi+" addWTRotamers continuousRotamers\n")
         for strandDef in my_dict['strands']:
             configFile.write(strandDef+" "+" ".join(my_dict['strands'][strandDef])+"\n")
-            print(strandDef+" "+" ".join(my_dict['strands'][strandDef]))
+            print((strandDef+" "+" ".join(my_dict['strands'][strandDef])))
 
 cmd.extend("generateConfigFile", generateConfigFile)
 
@@ -1066,7 +1106,7 @@ cmd.extend("loadDesignFromConfigFile", loadDesignFromConfigFile)
 
 
 def rewritePymolMenu(self):
-    print "Added probe dots command to context menu."
+    print("Added probe dots command to context menu.")
     menu.PrePIVCompute = menu.compute
     menu.probe_dots = probe_dots
     def computeWithDotsMenu(self_cmd, sele):
