@@ -133,6 +133,56 @@ THREE_TO_FULL_AA_MAP= {
     'GLN': 'Glutamine'
 }
 
+THREE_TO_ONE_AA_MAP = {
+    'ALA': 'A',
+    'GLY': 'G',
+    'ILE': 'I',
+    'LEU': 'L',
+    'PRO': 'P',
+    'VAL': 'V',
+    'PHE': 'F',
+    'TRP': 'W',
+    'TYR': 'Y',
+    'ASP': 'D',
+    'GLU': 'E',
+    'ARG': 'R',
+    'HIS': 'H',
+    'HID': 'H',
+    'HIE': 'H',
+    'HIP': 'H',
+    'LYS': 'K',
+    'SER': 'S',
+    'THR': 'T',
+    'CYS': 'C',
+    'MET': 'M',
+    'ASN': 'N',
+    'GLN': 'Q'
+}
+ONE_TO_THREE_AA_MAP = {
+    'A': 'ALA',
+    'G': 'GLY',
+    'I': 'ILE',
+    'L': 'LEU',
+    'P': 'PRO',
+    'V': 'VAL',
+    'F': 'PHE',
+    'W': 'TRP',
+    'Y': 'TYR',
+    'D': 'ASP',
+    'E': 'GLU',
+    'R': 'ARG',
+    'H': 'HIS',
+    'H': 'HID',
+    'H': 'HIE',
+    'H': 'HIP',
+    'K': 'LYS',
+    'S': 'SER',
+    'T': 'THR',
+    'C': 'CYS',
+    'M': 'MET',
+    'N': 'ASN',
+    'Q': 'GLN'
+}
 pdbfiles = {}
 
 def __init__(self):
@@ -148,6 +198,13 @@ def __init__(self):
     proteininteractionviewer.rewritePymolMenu(self)
     approot = self.root
 
+def aa3to1(AA):
+    return THREE_TO_ONE_AA_MAP[AA]
+cmd.extend('AA3to1', aa3to1)
+
+def aa1to3(AA):
+    return ONE_TO_THREE_AA_MAP[AA]
+cmd.extend('AA1to3', aa1to3)
 
 
 
@@ -241,7 +298,7 @@ def generateOSPREYCFSFiles(mutpatten="mut", shellpattern="shell", saveDirectory=
     for setID, setDict in sets.items():
         outString = "# This cfs file automatically generated with the PDP in PyMOL.\n" \
             + 'structure_dir = "/usr/project/dlab/Users/jj/COVID-19/runs/structures/"\n' \
-            + 'complex = structure_dir+"'+setDict['pdb']+'.pdb"\n' \
+            + 'complex = structure_dir+"'+setDict['pdb']+'"\n' \
             + 'protein = complex\n' \
             + 'ligand = complex\n' \
             + 'strand_defs = '+str(setDict['strand_defs']).replace("{","{\n").replace("], '","],\n'")+'\n\n' \
@@ -252,6 +309,68 @@ def generateOSPREYCFSFiles(mutpatten="mut", shellpattern="shell", saveDirectory=
             configFile.write(outString)
         
 cmd.extend('generateOSPREYCFSFiles', generateOSPREYCFSFiles)
+
+def replaceResidues(selection, sourceObj=None, resurfacedSourceObj=None, thirdObj=None, thirdSel=""):
+    if sourceObj is None:
+        sourceObj = cmd.get_object_list()[0]
+    if resurfacedSourceObj is None:
+        resurfacedSourceObj = cmd.get_object_list()[1]
+    thirdStr = ""
+    if thirdObj is not None:
+        thirdStr = " or %s and %s" % (thirdObj, thirdSel)
+    cmd.save('%s_resurfaced.pdb' % sourceObj, "%s and chain A or %s and chain B and not %s or %s and %s %s" % (sourceObj, sourceObj, selection, resurfacedSourceObj, selection, thirdStr))
+cmd.extend('replaceResidues', replaceResidues)
+
+def resurface_2r05():
+    resurfaced_resi_2r05 = [375,378,379,382,383,386,387,389,390]
+    selection = "resi "+"+".join([str(x) for x in resurfaced_resi_2r05])
+    objects = cmd.get_object_list()
+    cmd.load("J:\\Research\\Coronavirus\\designs\\resultStructures\\2r05\\resurface\\2r05_resurface.pdb")
+    for sourceObject in objects:
+        replaceResidues(selection, sourceObj=sourceObject, resurfacedSourceObj="2r05_resurface")
+cmd.extend("resurface_2r05", resurface_2r05)
+
+def resurface_3qf7():
+    resurfaced_resi_3qf7 = [167,168,171,172,175,179,182,183,186,189,190]
+    selection = "resi "+"+".join([str(x) for x in resurfaced_resi_3qf7])
+    objects = cmd.get_object_list()
+    cmd.load("J:\\Research\\Coronavirus\\designs\\resultStructures\\3qf7\\resurface\\3qf7_resurface.pdb")
+    for sourceObject in objects:
+        replaceResidues(selection, sourceObj=sourceObject, resurfacedSourceObj="3qf7_resurface")
+cmd.extend("resurface_3qf7", resurface_3qf7)
+
+def resurface_5vay():
+    resurfaced_resi_5vay = [124,127,128,131,132,135,139]
+    selection = "resi "+"+".join([str(x) for x in resurfaced_resi_5vay])
+    objects = cmd.get_object_list()
+    cmd.load("J:\\Research\\Coronavirus\\designs\\resultStructures\\5vayhelix\\resurface\\5vay_resurface.pdb")
+    for sourceObject in objects:
+        replaceResidues(selection, sourceObj=sourceObject, resurfacedSourceObj="5vay_resurface")
+cmd.extend("resurface_5vay", resurface_5vay)
+
+def prep2r05_1r4l():
+    prep2r05("1r4l")
+cmd.extend('prep2r05_1r4l', prep2r05_1r4l)
+
+def prep2r05_1r42():
+    prep2r05("1r42")
+cmd.extend('prep2r05_1r42', prep2r05_1r42)
+
+def prep2r05(sourcePDB):
+    frontHalf = "chain B and resi "+"+".join(str(x) for x in range(373,382))
+    backHalf = "chain B and resi "+"+".join(str(x) for x in range(382,392))
+    asnlist = [90, 103, 499, 546]
+    frontHelixPattern = "seq.373*"
+    backHelixPattern = "seq.382*"
+
+    objname = cmd.get_object_list()[0]
+    objname2 = cmd.get_object_list()[1]
+    cmd.load('J:\\Research\\Coronavirus\\fromRyan\\4-13-2020\\'+sourcePDB+'_prep.pdb')
+    cmd.align(sourcePDB+"_prep", objname)
+    cmd.select("missing", sourcePDB+"_prep and resi 90+103+481+499")
+    cmd.select("helix", objname+" and "+frontHalf+" or "+objname2+" and "+backHalf)
+    cmd.select("full", "missing or "+objname+" and chain A or helix")
+    cmd.create("merged", "full")
 
 def renumber(selection='all', start=1, startsele=None, quiet=1):
     '''
@@ -293,6 +412,7 @@ ARGUMENTS
     minmax = [start, start]
 
     def traverse(atom, resi):
+        print("Atom: "+atom.chain+atom.resi)
         atom.resi = resi
         atom.visited = True
         for other in atom.adjacent:
@@ -960,6 +1080,56 @@ def makeCheckList(self):
 def selectItem(self, item):
     print(item, self.cl.getstatus(item))
 
+def oneLetterSequence(selection):
+    print("Generating one-letter sequence..")
+    global iterDict
+    iterDict = {'resCodes':[]}
+    cmd.iterate(selection+' and name CA', "resCodes.append(resn)", space=iterDict)
+    print("Iterated.")
+    oneLetterList = [THREE_TO_ONE_AA_MAP[x] for x in iterDict['resCodes']]
+    print("Remapped.")
+    print("".join(oneLetterList))
+cmd.extend("oneLetterSequence", oneLetterSequence)
+
+def colorMutScene(index):
+    mutStr = 'mut'+str(index)
+    util.cbam(mutStr)
+    cmd.show('sticks', mutStr)
+    shellStr = 'shell'+str(index)
+    util.cbao(shellStr)
+    cmd.show('sticks', shellStr)
+    cmd.show('lines', 'byres %s around 4' % shellStr)
+cmd.extend("colorMutScene", colorMutScene)
+
+def colorScene(index=-1):
+    cmd.hide('sticks', 'all')
+    cmd.hide('lines', 'all')
+    util.cbc()
+    util.cnc()
+    if(int(index)>0):
+        colorMutScene(index)
+cmd.extend("colorScene", colorScene)
+    
+def autoMut(selection):
+    nextMutIndex = 1
+    nextMutSel = 'mut%d'%nextMutIndex
+    while nextMutSel in cmd.get_names('selections'):
+        nextMutIndex = nextMutIndex + 1
+        nextMutSel = 'mut%d'%nextMutIndex
+    cmd.select(nextMutSel, selection)
+    cmd.select('shell%d'%nextMutIndex, 'byres %s around 6' % nextMutSel)
+    colorScene(nextMutIndex)
+    cmd.orient('shell%d'%nextMutIndex)
+    cmd.scene(key=nextMutSel, action='store')
+cmd.extend("autoMut", autoMut)
+    
+
+def devshortcut(approot=None):
+    cmd.fetch('1ubq')
+    setmutable('resi 43', 'ALA')
+    saveConfigFile()
+
+cmd.extend("devshortcut",devshortcut)
 def devshortcut(approot=None):
     cmd.fetch('1ubq')
     setmutable('resi 43', 'ALA')
@@ -974,6 +1144,19 @@ def devshortcut2(approot=None):
 cmd.extend("devshortcut2",devshortcut2)
 
 oldload = cmd.load 
+def cnbc():
+    util.cbc()
+    util.cnc()
+cmd.extend("cnbc", cnbc)
+
+def oneletterseq(selection):
+    space={'seqstring':[]}
+    cmd.iterate(selection+' and name CA', 'seqstring.append(resn)', space=space)
+    oneletterstring = "".join([aa3to1(x) for x in space['seqstring']])
+    print(oneletterstring)
+    oneletterstring = ",".join([aa3to1(x) for x in space['seqstring']])
+    print(oneletterstring)
+cmd.extend("getseq", oneletterseq)
 
 def wrapload(filename, object='', state=0, format='', finish=1,
              discrete=-1, quiet=1, multiplex=None, zoom=-1, partial=0,

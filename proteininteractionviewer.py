@@ -662,9 +662,14 @@ def loadDotsFromSels(sel1, sel2, dotsName='dots', extraParams="", dotSize=0,line
 
     #f = open(dotsName+'.txt', 'w')
     #f.write(dots)
-    loadDots(dots,dotsName,dotSize,lineSize)
+    #loadDots(dots,dotsName,dotSize,lineSize)
+    cmd.async_("loadDots",dots,dotsName,dotSize,lineSize)
 
 cmd.extend("loadDotsFromSels",loadDotsFromSels)
+
+def loadDotsFromSelsAsync(sel1, sel2, dotsName='dots', extraParams="", dotSize=0,lineSize=1,doSelf=0):
+    cmd.async_('loadDotsFromSels', sel1, sel2, dotsName=dotsName, extraParams="", dotSize=dotSize, lineSize=lineSize, doSelf=doSelf)
+cmd.extend("loadDotsFromSelsAsync",loadDotsFromSelsAsync)
     
 def drawDots (dotList, vectorList, dotSize = 0, lineSize = 1 ):
     obj = []
@@ -764,9 +769,7 @@ def loadDots(data,dotsName='dots', dotSize=0, lineSize=1):
     #print "Loaded Dots..."
     
     return
-
-    
-#cmd.extend('loadDots', loadDots)
+cmd.extend('loadDots', loadDots)
 #cmd.extend('loadDotsFromFile', loadDotsFromFile)
 
 class AAtype:
@@ -836,10 +839,78 @@ def autoEnsembleDots():
     util.cbag('chain A')
 cmd.extend('autoEnsemble', autoEnsembleDots)
 
+def multiStateEnsembleDots(startConf=1, endConf=10):
+    startConf = int(startConf)
+    endConf = int(endConf)
+    print("Generating dots for conformations "+str(startConf)+" through "+str(endConf)+"...")
+    needSplit = False
+    pattern = "(error)"
+    firstObj = cmd.get_object_list()[0]
+    pattern = firstObj
+    for index in range(startConf, endConf+1):
+        if pattern+"_"+str(index) not in cmd.get_object_list():
+            needSplit = True
+            break
+    if needSplit:
+        # assume one multi-state object is first in the list.
+        # cmd.async_("split_states", cmd.get_object_list()[0])
+        cmd.split_states(cmd.get_object_list()[0], startConf, endConf)
+    orientResiList = []
+    selection = "(error)"
+    number = "(error)"
+    chain = "(error)"
+    model = cmd.get_object_list()[1]
+    separatorIndex = model.rindex("_")
+    pattern = model[:separatorIndex]
+    number = model[separatorIndex+1:]
+    print("Pattern: "+pattern)
+    print("Number: "+number)
+    sequenceDict = dict((x.strip().replace("seq.B",""), y.strip()) \
+                   for x, y in (element.split('_') \
+                   for element in pattern.split('_B')))
+    chain = "B"
+    resiList = []
+    for resi in list(sequenceDict.keys()):
+        resnum = resi[0:]
+        resiList.append(resnum)
+    selection = "chain "+chain+" and resi "+"+".join(resiList)
+    orientResiList = resiList
+            
+    loadEnsembleDots(pattern+"_*", selection, startConf, endConf+1, len(number))
+    #cmd.async_("loadEnsembleDots", pattern+"_*", selection, startConf, startConf+numConfs, len(number))
+    colorMultiEnsemble(orientResiList)
+    #cmd.async_("colorMultiEnsemble", orientResiList)
+cmd.extend('multiStateEnsemble', multiStateEnsembleDots)
+
+def multiEnsembleAsync(startConf=1, endConf=10):
+    cmd.async_('multiStateEnsemble', startConf=startConf, endConf=endConf)
+cmd.extend('multiEnsemble', multiEnsembleAsync)
+
+def renderMultiEnsemble(mutSel):
+    util.cbac('chain B')
+    util.cbag('chain A')
+    cmd.show('sticks', mutSel)
+    cmd.show('lines', "byres "+mutSel+" around 6")
+    cmd.hide('ribbon')
+    cmd.show('cartoon')
+cmd.extend('renderMultiEnsemble', renderMultiEnsemble)
+
+
+def colorMultiEnsemble(orientResiList):
+    util.cbac('chain B')
+    util.cbag('chain A')
+    cmd.orient('chain B and resi '+"+".join(orientResiList))
+    cmd.hide('ribbon')
+    cmd.show('cartoon')
+cmd.extend('colorMultiEnsemble', colorMultiEnsemble)
+
 def loadEnsembleDots(pattern, selection, start, end, padding, radius=5):
     for i in [str(id0).rjust(int(padding), '0') for id0 in range(int(start), int(end))]: 
         object_selection = pattern.replace("*",i)
-        print("processing selection "+object_selection)
+        if str(i)+'dots' in cmd.get_names('objects'):
+            print("dots object for "+str(i)+" already present, skipping...")
+            continue
+        print("processing selection "+object_selection+" for residues within "+str(radius)+" of "+selection)
         loadDotsFromSels(object_selection+" and "+selection, object_selection+" and byres "+selection+" around "+str(radius), str(i)+"dots")
     cmd.show("sticks", selection)
     cmd.show("lines", "byres "+selection+" around 5")
