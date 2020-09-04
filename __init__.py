@@ -321,6 +321,26 @@ def replaceResidues(selection, sourceObj=None, resurfacedSourceObj=None, thirdOb
     cmd.save('%s_resurfaced.pdb' % sourceObj, "%s and chain A or %s and chain B and not %s or %s and %s %s" % (sourceObj, sourceObj, selection, resurfacedSourceObj, selection, thirdStr))
 cmd.extend('replaceResidues', replaceResidues)
 
+def prep5vay_1r4l():
+    prep5vay("1r4l")
+cmd.extend('prep5vay_1r4l', prep5vay_1r4l)
+def prep5vay_1r42():
+    prep5vay("1r42")
+cmd.extend('prep5vay_1r42', prep5vay_1r42)
+
+def prep5vay(sourcePDB):
+    asnlist = [90, 103, 499, 546]
+    objects = cmd.get_object_list()
+    cmd.load('J:\\Research\\Coronavirus\\fromRyan\\4-13-2020\\'+sourcePDB+'_prep.pdb')
+
+    for objname in objects:
+        cmd.align(sourcePDB+"_prep", objname)
+        cmd.select("missing", sourcePDB+"_prep and resi 90+103+481+499")
+        cmd.select("helix", objname+" and chain B")
+        cmd.select("full", "missing or "+objname+" and chain A or helix")
+        cmd.create("merged", "full")
+        cmd.save('%s_fixed.pdb' % objname, "merged")
+
 def resurface_2r05():
     resurfaced_resi_2r05 = [375,378,379,382,383,386,387,389,390]
     selection = "resi "+"+".join([str(x) for x in resurfaced_resi_2r05])
