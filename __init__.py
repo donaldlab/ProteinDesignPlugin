@@ -310,7 +310,7 @@ def generateOSPREYCFSFiles(mutpatten="mut", shellpattern="shell", saveDirectory=
         
 cmd.extend('generateOSPREYCFSFiles', generateOSPREYCFSFiles)
 
-def replaceResidues(selection, sourceObj=None, resurfacedSourceObj=None, thirdObj=None, thirdSel=""):
+def replaceResidues(selection, sourceObj=None, resurfacedSourceObj=None, thirdObj=None, thirdSel="", alt=""):
     if sourceObj is None:
         sourceObj = cmd.get_object_list()[0]
     if resurfacedSourceObj is None:
@@ -318,7 +318,7 @@ def replaceResidues(selection, sourceObj=None, resurfacedSourceObj=None, thirdOb
     thirdStr = ""
     if thirdObj is not None:
         thirdStr = " or %s and %s" % (thirdObj, thirdSel)
-    cmd.save('%s_resurfaced.pdb' % sourceObj, "%s and chain A or %s and chain B and not %s or %s and %s %s" % (sourceObj, sourceObj, selection, resurfacedSourceObj, selection, thirdStr))
+    cmd.save('%s_resurfaced%s.pdb' % (sourceObj,alt), "%s and chain A or %s and chain B and not %s or %s and %s %s" % (sourceObj, sourceObj, selection, resurfacedSourceObj, selection, thirdStr))
 cmd.extend('replaceResidues', replaceResidues)
 
 def prep5vay_1r4l():
@@ -354,9 +354,9 @@ def resurface_3qf7():
     resurfaced_resi_3qf7 = [167,168,171,172,175,179,182,183,186,189,190]
     selection = "resi "+"+".join([str(x) for x in resurfaced_resi_3qf7])
     objects = cmd.get_object_list()
-    cmd.load("J:\\Research\\Coronavirus\\designs\\resultStructures\\3qf7\\resurface\\3qf7_resurface.pdb")
+    cmd.load("J:\\Research\\Coronavirus\\designs\\resultStructures\\3qf7\\resurface\\3qf7_resurface_KE.pdb")
     for sourceObject in objects:
-        replaceResidues(selection, sourceObj=sourceObject, resurfacedSourceObj="3qf7_resurface")
+        replaceResidues(selection, sourceObj=sourceObject, resurfacedSourceObj="3qf7_resurface_KE")
 cmd.extend("resurface_3qf7", resurface_3qf7)
 
 def resurface_5vay():
@@ -367,6 +367,49 @@ def resurface_5vay():
     for sourceObject in objects:
         replaceResidues(selection, sourceObj=sourceObject, resurfacedSourceObj="5vay_resurface")
 cmd.extend("resurface_5vay", resurface_5vay)
+
+def resurface_alt_2r05():
+    resurface_altd_resi_2r05 = [375,378,379,382,383,386,387,389,390]
+    selection = "resi "+"+".join([str(x) for x in resurface_altd_resi_2r05])
+    objects = cmd.get_object_list()
+    cmd.load("J:\\Research\\Coronavirus\\designs\\resultStructures\\2r05\\resurface\\2r05_resurface_alt.pdb")
+    for sourceObject in objects:
+        replaceResidues(selection, sourceObj=sourceObject, resurfacedSourceObj="2r05_resurface_alt", alt="_alt")
+cmd.extend("resurface_alt_2r05", resurface_alt_2r05)
+
+def resurface_alt_3qf7():
+    resurface_altd_resi_3qf7 = [167,168,171,172,175,179,182,183,186,189,190]
+    selection = "resi "+"+".join([str(x) for x in resurface_altd_resi_3qf7])
+    objects = cmd.get_object_list()
+    cmd.load("J:\\Research\\Coronavirus\\designs\\resultStructures\\3qf7\\resurface\\3qf7_resurface_KE.pdb")
+    for sourceObject in objects:
+        replaceResidues(selection, sourceObj=sourceObject, resurfacedSourceObj="3qf7_resurface_KE", alt="_alt")
+cmd.extend("resurface_alt_3qf7", resurface_alt_3qf7)
+
+def resurface_alt_5vay():
+    resurface_altd_resi_5vay = [124,127,128,131,132,135,139]
+    selection = "resi "+"+".join([str(x) for x in resurface_altd_resi_5vay])
+    objects = cmd.get_object_list()
+    cmd.load("J:\\Research\\Coronavirus\\designs\\resultStructures\\5vayhelix\\resurface\\5vay_resurface_alt.pdb")
+    for sourceObject in objects:
+        replaceResidues(selection, sourceObj=sourceObject, resurfacedSourceObj="5vay_resurface_alt", alt="_alt")
+cmd.extend("resurface_alt_5vay", resurface_alt_5vay)
+
+def pepfold():
+    objects = cmd.get_object_list('DU-CV*')
+    for sourceObject in objects[1:]:
+        cmd.align(sourceObject, objects[0])
+    prefix = 'model'
+    last = objects[-1]
+    lastIndex = int(last[last.index(prefix)+len(prefix):])
+    if '.' in last:
+        dotIndex = last.index('.')+1
+        lastIndex = int(last[last.index(prefix)+len(prefix):dotIndex])
+    print("last index is "+str(lastIndex)+" from "+last)
+    for i in range(1, lastIndex+1):
+        print("grouping model%d" % lastIndex) 
+        cmd.group('model%d' % i, '*model%d*' % i)
+cmd.extend("pepfold", pepfold)
 
 def prep2r05_1r4l():
     prep2r05("1r4l")

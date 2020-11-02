@@ -941,6 +941,13 @@ def loadDotsForSelf(selection, colorResidues=False):
     
 cmd.extend("loadDotsForSelf",loadDotsForSelf)
 
+def dotify(targetObject):
+    objects = cmd.get_object_list()
+    cmd.keyword['cnbc'][0]()
+    if targetObject in objects:
+        loadDotsFromSels('%s and chain A' % targetObject, '%s and chain B' % targetObject, '%s_dots' % targetObject)
+cmd.extend("dotify", dotify)
+
 def loadDotsForResidueShell(selection, radius, colorResidues=False):
     """
     DESCRIPTION
@@ -1016,6 +1023,7 @@ def probe_dots(self_cmd, sele):
                   [ 1, 'with itself', 'cmd.keyword[\'loadDotsForSelf\'][0]('+rsele+')' ],
                   [ 1, 'with neighbors', sele_ranges(list(range(2,7,2))) ],
                   [ 1, 'with selection', sele_morphs(self_cmd.get_names('public_selections')[:25]) ],
+                  [ 1, 'dotify', 'cmd.keyword[\'dotify\'][0]('+rsele+')' ],
               ]
 
 def gavilan_cmd(self_cmd, sele):
